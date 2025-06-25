@@ -64,14 +64,19 @@ yarn build
 - соверишть POST запрос по переданному URL и данным *post*.
 
 ##### 3. CartModel
-Класс для использования корзины. Внутри себя содержит интерфейс брокера событий. В ней можно:
+Класс для использования корзины. Внутри себя содержит интерфейс брокера событий, массив добавленных в корзину товаров, а также общую стоимость всех товаров. В ней можно:
 - добавить товар в коризну *addItem*
 - удалить товар из корзины *removeItem*
-- уведомить о событии в корзине *_changed*
+- уведомить брокера события об изменении товаров в корзине *_changed*
+- подсчёт стоимости всех товаров в корзине *countPrice*
+- очистить корзину и убрать все товары *clearCart*
+- получение списка товаров в корзине *getItems*
+- получение общей стоимости товаров в корзине *getTotal*
 
-##### 4. CatalogModel
+##### 4. CatalogModel (impl. ICatalogModel)
 Содержит в себе массив с товарами (*IProduct*), а также методы:
 - установка списка товаров (например после запроса по АПИ) *setItems*
+- получение списка товаров в каталоге *getItems* 
 - получения товара по id *getProduct*
 
 ##### 5. ProductItemModel
@@ -85,15 +90,44 @@ yarn build
 
 ##### 1. ICartModel
 Интерфейс, который реализует корзина, позволяет добавлять и удалять товары, а также хранит в себе добавленные товары.
+```
+interface ICartModel {
+    items: Map<string, number>;
+    add(id: string): void;
+    remove(id: string): void;
+}
+```
 
 ##### 2. IEventEmitter
 Интерфейс брокера событий для оповещения об изменении товаров в корзине.
+```
+interface IEventEmitter {
+    emit: (event: string, data: unknown) => void;
+};
+```
 
 ##### 3. IProduct
 Интерфейс, который хранит в себе информацию о товаре
+```
+interface IProduct {
+    id: string;
+    title: string;
+};
+```
+
+##### 4. ICatalogModel
+Интерфейс, для взаимодействия с каталогом
+```
+interface ICatalogModel {
+    items: IProduct[];
+    setItems(items: IProduct[]): void;
+    getItems(): IProduct[];
+    getProduct(id: string): IProduct;
+};
+```
 
 
-### Модель отображения
+### Классы представления
 
 #### Классы
 
@@ -132,10 +166,20 @@ yarn build
 ##### 1. IView
 Интерфейс для хранения фрагмента разметки и заполнение её данными для рендера
 - метод для установки данных *render*
+```
+interface IView {
+    render(data?: object): HTMLElement
+};
+```
 
 ###### 1.1. IViewConstructor
 Интерфейс для создания рендеров разметок
 - метод для создание нового *IView* элемента *new*
+```
+interface IViewConstructor {
+    new(container: HTMLElement, events?: IEventEmitter): IView;
+};
+```
 
 ## Основные типы
 
@@ -158,5 +202,55 @@ type Product = {
 type ProductList = {
     total: number,
     items: Product[]
+}
+```
+
+- ### OrderForm
+Объект данных пользователя для заказа. Содержит необходимую информацию для заказа
+```
+type OrderForm = {
+    paymentMethod: "Онлайн" | "При получении",
+    address: string,
+    email: string,
+    phone: string
+};
+```
+
+- ### ProductList
+Объект листа продуктов, который содержит в себе массив продуктов и их количество. Является шаблоном для ответа сервера
+```
+type ProductList = {
+    total: number,
+    items: Product[]
+}
+```
+
+- ### OrderForm
+Объект данных пользователя для заказа. Содержит необходимую информацию для заказа
+```
+type OrderForm = {
+    paymentMethod: "Онлайн" | "При получении",
+    address: string,
+    email: string,
+    phone: string
+};
+```
+
+## Логика связки слоёв
+Вся связь между слоями будет работать за счёт брокера событий, который при возникновении определённых событий в одном слое будет вызывать колбэк который внесёт необходимые изменения.
+
+Все события на сайте:
+```
+enum Events {
+    PRODUCT_OPEN = 'product:changed', // Клик по карточке в каталоге
+    CART_ADD = 'cart:addItem', // Добавление товара в коризну
+    CART_REMOVE = 'cart:removeItem', // Удаление товара из корзины
+    CART_CHANGE = 'cart:changed', // Изменение состава корзины
+    CART_CLEAR = 'cart:clear', // Очистка корзины
+    MODAL_OPEN = 'modal:open', // Открытие модального окна
+    MODAL_CLOSE = 'modal:close', // Закрытие модального окна
+    FORM_INIT = 'form:init', // Старт формы оформления заказа
+    FORM_NEXT = 'form:next', // Переход на следующий этап оформления заказа
+    FORM_SUBMIT = 'form:submit', // Отправка заказа
 }
 ```
