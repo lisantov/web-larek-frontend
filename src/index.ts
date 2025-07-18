@@ -3,7 +3,7 @@ import { EventEmitter, IEvents } from './components/base/events';
 import { Catalog } from './components/data/catalogData';
 import { User } from './components/data/userData';
 import { CartD } from './components/data/cartData';
-import { EventsList, IProduct, IUser, TProductCard, TUserContactInfo, TUserOrderInfo } from './types';
+import { EventsList, IProduct, TUserContactInfo, TUserOrderInfo } from './types';
 import { Api } from './components/base/api';
 import { AppApi } from './components/communication/appApi';
 import { API_URL, settings } from './utils/constants';
