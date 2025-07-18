@@ -54,7 +54,7 @@ export interface IProduct {
 };
 ```
 
-Тип для обновления данных карточки товара
+Тип для данных карточки товара
 ```
 export type TProductCard = IProduct & {
     itemIndex?: number;
@@ -69,10 +69,15 @@ export interface IProductList {
 };
 ```
 
+Тип для метода оплаты
+```
+export type TPaymentMethod = 'card' | 'cash' | '';
+```
+
 Данные пользователя
 ```
-export interface IUserInfo {
-    paymentMethod: 'online' | 'cash' | undefined;
+export interface IUser {
+    paymentMethod: TPaymentMethod;
     address: string;
     email: string;
     phone: string;
@@ -84,7 +89,29 @@ export interface IUserInfo {
 export interface IProductsData {
     products: IProduct[];
     preview: string | null;
+    getProduct(id: string): IProduct | undefined;
 };
+```
+
+Интерфейс управления данными пользователя
+```
+export interface IUserData {
+    setOrderInfo(data: TUserOrderInfo): void;
+    setContactsInfo(data: TUserContactInfo): void;
+    isOrderValid(data: Record<keyof TUserOrderInfo, string>): { isValid: boolean, errors: string };
+    isContactsValid(data: Record<keyof TUserContactInfo, string>): { isValid: boolean, errors: string };
+}
+```
+
+Интерфейс управления корзиной
+```
+export interface IProductsCartData {
+    products: IProduct[];
+    addProduct(product: IProduct): void;
+    deleteProduct(id: string): void;
+    getProduct(id: string): IProduct | undefined;
+    getTotalPrice(): number;
+}
 ```
 
 Карточка товара в каталоге
@@ -110,6 +137,20 @@ export type TUserOrderInfo = Pick<IUserInfo, 'paymentMethod' | 'address'>;
 Данные пользователя на втором шаге оформления заказа
 ```
 export type TUserContactInfo = Pick<IUserInfo, 'email' | 'phone'>;
+```
+
+Методы для запроса на сервер(не считая get)
+```
+export type ApiPostMethods = 'POST';
+```
+
+Интерфейс для работы с Api
+```
+export interface IApi {
+    baseUrl: string;
+    get<T>(url: string): Promise<T>;
+    post<T>(url: string, data: object, method?: ApiPostMethods): Promise<T>;
+}
 ```
 
 ## Архитектура приложения
@@ -159,24 +200,24 @@ export interface IProductsData {
 
 #### Класс User
 Класс отвечает за храненеи и логику работы с данными пользователя.\
-Констркутор принимает экземпляр брокера событий.\
 Поля класса:
  - `user: IUser` - объект данных пользователя.
- - `events: IEvents` - экземпляр класса `EventEmitter` для инициализации событий при изменении данных.
  Так же класс предоставляет методы для взаимодействия с данными:
- - `setPaymentInfo` - устанавливает данные пользователя об оплате (способ и адрес) 
- - `setContactInfo` - устанавливает данные пользователя о контактах (телефон и почта)
- - `checkPaymentValidation` - проверяет объект с данными об оплате на валидность
- - `checkConactsValidation` - проверяет объект с данными о контактах на валидность
- - а также геттер данных пользователя
+ - `isPaymentMethod` - тайпгард для метода оплаты
+ - `setOrderInfo` - устанавливает данные пользователя об оплате (способ и адрес) 
+ - `setContactsInfo` - устанавливает данные пользователя о контактах (телефон и почта)
+ - `clearUserData` - метод для очистки данных пользователя
+ - `isOrderValid` - проверяет объект с данными об оплате на валидность
+ - `isContactsValid` - проверяет объект с данными о контактах на валидность
+ - а также геттеры и сеттеры полей объекта данных пользователя, и геттер самого объекта пользователя
 
  Реализует интерфейс:
 ```
 export interface IUserData {
-    setPaymentInfo(data: TUserPaymentInfo): void;
-    setContactInfo(data: TUserContactInfo): void;
-    checkPaymentValidation(data: Record<keyof TUserPaymentInfo, string>): boolean;
-    checkContactsValidation(data: Record<keyof TUserContactInfo, string>): boolean;
+    setOrderInfo(data: TUserOrderInfo): void;
+    setContactsInfo(data: TUserContactInfo): void;
+    isOrderValid(data: Record<keyof TUserOrderInfo, string>): { isValid: boolean, errors: string };
+    isContactsValid(data: Record<keyof TUserContactInfo, string>): { isValid: boolean, errors: string };
 }
 ```
 
@@ -207,7 +248,7 @@ export interface IProductsCartData {
 ### Слой представления
 
 #### Базовый класс Component
-Класс является дженериком и родителем всех компонентов в слое представления. В дженериках принимает тип объекта, в котором данные будут передаваться в метож render для отображения данных в компоненте. В конструктор принимает элемент разметки, являющийся основным родительским контейнером компонента. Содержит методж render, отвечающий за сохранение полученных данных в полях компонента через сеттеры, возвращает обновлённый контейнер компонента.
+Класс является дженериком и родителем всех компонентов в слое представления. В дженериках принимает тип объекта, в котором данные будут передаваться в метод render для отображения данных в компоненте. В конструктор принимает элемент разметки, являющийся основным родительским контейнером компонента. Содержит метод render, отвечающий за сохранение полученных данных в полях компонента через сеттеры, возвращает обновлённый контейнер компонента.
 
 #### Класс Modal
 Реализует универсальное модальное окно, которое при создании принимает в себя элемент модального окна и брокер событий. Устанавливает слушатели на крестик, клик вне модального окна и клавиатуру для закрытия модального окна.\
@@ -218,13 +259,31 @@ export interface IProductsCartData {
 Также содержит в себе следующие методы:
 - `open` - открывает модальное окно по текущему селектору и инициализирует событие об открытии попапа
 - `close` - закрывает модальное окно по текущему селектору и инициализирует событие о закрытии попапа
+- `handleEsc` - проверяет, является ли нажатая кнопка верной для закрытия модального окна
 - `render` - принимает в себя разметку после чего меняет содержимое окна и возвращает его разметку
+
+#### Класс Modal
+Реализует универсальный объект формы, которая при создании принимает в себя элемент формы и брокер событий. Устанавливает слушатели на ввод, нажатие кнопок и сабмит формы.\
+Поля класса:
+- `container: HTMLElement` - элемент формы
+- `events: IEvents` - экземпляр класса `EventEmitter` для инициализации событий при изменении данных
+- `optionButtons: NodeListOf<HTMLButtonElement>` - список кнопок выбора варианта в форме
+- `submitButton: HTMLButtonElement` - кнопка отправки формы
+- `errorText: HTMLElement` - текст для отображения ошибок в форме
+
+Также содержит в себе следующие методы:
+- `clearForm` - метод для очистки данных формы
+- `isButtonIsOption` - проверяет, является ли кнопка кнопкой выбора варианта
+- `onInputChange` - инициирует событие при вводе в поля формы
+- `render` - принимает в себя разметку после чего меняет содержимое окна и возвращает его разметку
+- геттеры и сеттеры полей класса
 
 #### Класс Card
 Отвечает за отображение карточки товара, задавая ей все данные. В конструктор передаётся брокер событий для инициализации событий и элемент содержимого темплейта, что позволяет при необходимости формировать карточки разных вариантов вёрстки. В классе устанавливаются слушатели на интерактивные элементы карточки.\
 В полях класса находятся элементы разметки карточки, а также ID товара.
 Методы:
 - `render(data?: Partial<TProductCard>)` - заполняет данные карточки и возвращает разметку карточки с установленными слушателями
+- `setAddButtonState(state: boolean)` - метод устанавливает состояние кнопки добваления товара в корзину в соответствии с переданным состоянием
 - `deleteCard()` - метод удаляет карточку из DOM, а также очищает данные элемента карточки
 - а также сеттеры элементов карточки *(и геттер у id карточки)*
 
@@ -233,12 +292,6 @@ export interface IProductsCartData {
 
 #### Класс Cart
 Класс, отвечающий за отображение коллекции карточек товара в корзине. В конструктор принимает элемент корзины и брокер событий. В метод render принимает массив разметки карточек, который отображает в контейнере.\
-
-#### Класс Form
-Класс, отвечающий за отображение формы с полями ввода. В конструкторе принимает в себя темплейт, а также брокер событий. При сабмите инициирует событие изменения данных. Устанавливает слушатели на ввод в поля формы и сабмит формы. В методе render принимает данные формы, а также ошибки в форме и boolean валидации формы\
-Методы:
-- `set isValid(isValid: boolean)` - изменяет активность кнопки сабмита
-- `set errors(errors: string[])` - принимает объект с данными для сокрытия или отображения ошибок в форме
 
 ### Слой коммуникации
 
@@ -262,13 +315,14 @@ export interface IProductsCartData {
 - `CARD:SELECT` - выбор карточки в каталоге
 - `CARD:ADD` - добавление товара в корзину
 - `CARD:DELETE` - удаление товара из корзины
+- `CART_OPEN` = открытие попапа корзины
 - `CART:ORDER` - оформление заказа в корзине
-- `ORDER-METHOD:INPUT` - изменение метода оплаты
+- `ORDER-PAYMENT:INPUT` - изменение метода оплаты
 - `ORDER-ADDRESS:INPUT` - изменение адреса доставки
 - `ORDER:VALIDATION` - событие, для валидации формы заказа
 - `ORDER:SUBMIT` - переход к заполнению контактов
-- `CONTACTS-PHONE:INPUT` - изменение номера телефона
 - `CONTACTS-EMAIL:INPUT` - изменение e-mail
+- `CONTACTS-PHONE:INPUT` - изменение номера телефона
 - `CONTACTS:VALIDATION` - событие, для валидации формы контактов
 - `CONTACTS:SUBMIT` - отправка заказа
 - `SUCCESS:CLOSE` - закрытие попапа успешного заказа

@@ -69,10 +69,6 @@ export type TUserOrderInfo = Pick<IUser, 'payment' | 'address'>;
 // ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ВО ВТОРОМ ШАГЕ ОФОРМЛЕНИЯ ЗАКАЗА
 export type TUserContactInfo = Pick<IUser, 'email' | 'phone'>;
 
-// ОТВЕТ СЕРВЕРА ПРИ РАЗМЕЩЕНИИ ЗАКАЗА 
-export type TOrderInfo = { id?: string, total?: number, error?: string};
-
-
 export type ApiPostMethods = 'POST';
 
 export interface IApi {
@@ -80,7 +76,6 @@ export interface IApi {
     get<T>(url: string): Promise<T>;
     post<T>(url: string, data: object, method?: ApiPostMethods): Promise<T>;
 }
-
 
 export enum EventsList {
     // ДАННЫЕ
@@ -96,7 +91,6 @@ export enum EventsList {
     CARD_DELETE = 'CARD:DELETE', // Удаление товара из корзины
     CART_OPEN = 'CART:OPEN', // Открытие попапа корзины
     CART_ORDER = 'CART:ORDER', // Оформление заказа в корзине
-    CARD_INPUT = 'CARD:INPUT', // Изменение метода оплаты
     ORDER_PAYMENT_INPUT = 'ORDER-PAYMENT:INPUT', // Изменение метода оплаты
     ORDER_ADDRESS_INPUT = 'ORDER-ADDRESS:INPUT', // Изменение метода оплаты
     ORDER_VALIDATION = 'ORDER:VALIDATION', // Событие, для валидации формы заказа
