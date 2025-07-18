@@ -13,23 +13,15 @@ export class Cart extends Component<ICart> {
     protected submitButton: HTMLButtonElement;
     protected itemsContainer: HTMLUListElement;
     protected totalPrice: HTMLElement;
-    protected cartButton: HTMLButtonElement;
-    protected cartCounter: HTMLElement;
 
     constructor(protected container: HTMLElement, events: IEvents) {
         super(container);
 
         this.events = events;
-        
-        this.cartButton = document.querySelector('.header__basket');
-        this.cartCounter = this.cartButton.querySelector('.header__basket-counter');
+
         this.itemsContainer = this.container.querySelector('.basket__list');
         this.totalPrice = this.container.querySelector('.basket__price');
         this.submitButton = this.container.querySelector('.basket__button');
-
-        this.cartButton.addEventListener('click', () => {
-            this.events.emit(EventsList.CART_OPEN, { cart: this })
-        })
 
         this.submitButton.addEventListener('click', () => {
             this.events.emit(EventsList.CART_ORDER, { cart: this });
@@ -51,7 +43,6 @@ export class Cart extends Component<ICart> {
     }
 
     set content(items: HTMLElement[]) {
-        this.cartCounter.textContent = items ? items.length.toString() : '0';
         if(items.length) {
             this.itemsContainer.replaceChildren(...items);
         }

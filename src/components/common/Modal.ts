@@ -32,10 +32,11 @@ export class Modal extends Component<IModal> {
         this.contentContainer.replaceChildren(content);
     }
 
-    open() {
+    open(data?: Partial<IModal>) {
         this.container.classList.add('modal_active');
         document.addEventListener('keydown', this.handleEsc);
         this.events.emit(EventsList.MODAL_OPEN, this);
+        this.render(data);
     }
 
     close() {

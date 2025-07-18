@@ -8,6 +8,7 @@ interface IForm {
 
 export class Form<T> extends Component<IForm> {
     protected events: IEvents;
+    protected inputs: NodeListOf<HTMLInputElement>
     protected optionButtons: NodeListOf<HTMLButtonElement>
     protected submitButton: HTMLButtonElement;
     protected errorText: HTMLElement;
@@ -20,23 +21,27 @@ export class Form<T> extends Component<IForm> {
         this.submitButton = this.container.querySelector('button[type=submit]');
         this.errorText = this.container.querySelector('.form__errors');
         this.optionButtons = this.container.querySelectorAll<HTMLButtonElement>('.button_alt');
+        this.inputs = this.container.querySelectorAll<HTMLInputElement>('.form__input');
 
-        this.container.addEventListener('click', (evt: Event) => {
-            if(evt.target instanceof HTMLButtonElement 
-            && this.isButtonIsOption(evt.target)) {
-                this.optionButtons.forEach(btn => btn.classList.remove('button_alt-active'));
-                evt.target.classList.add('button_alt-active');
-                const field = 'payment' as keyof T;
-                const value = evt.target.name;
-                this.onInputChange(field, value.toString());
-            }
+        this.optionButtons.forEach(button => {
+            button.addEventListener('click', (evt: Event) => {
+                if(evt.target instanceof HTMLButtonElement) {
+                    this.optionButtons.forEach(btn => btn.classList.remove('button_alt-active'));
+                    evt.target.classList.add('button_alt-active');
+                    const field = 'payment' as keyof T;
+                    const value = evt.target.name;
+                    this.onInputChange(field, value.toString());
+                }
+            });
         });
 
-        this.container.addEventListener('input', (evt: Event) => {
-            const target = evt.target as HTMLInputElement;
-            const field = target.name as keyof T;
-            const value = target .value;
-            this.onInputChange(field, value);
+        this.inputs.forEach(input => {
+            input.addEventListener('input', (evt: Event) => {
+                const target = evt.target as HTMLInputElement;
+                const field = target.name as keyof T;
+                const value = target .value;
+                this.onInputChange(field, value);
+            })
         })
 
         this.container.addEventListener('submit', (evt: Event) => {

@@ -1,4 +1,4 @@
-import { IProduct, IProductList, IApi, IUser, TOrderInfo } from "../../types";
+import { IProduct, IProductList, IApi, IUser, TOrderInfo, TOrder } from "../../types";
 
 export class AppApi {
     private _baseApi: IApi
@@ -15,15 +15,7 @@ export class AppApi {
         return this._baseApi.get<IProduct>(`/product/${id}`).then(data => data);
     }
 
-    postOrder(userData: IUser, total: number, items: IProduct[]): Promise<TOrderInfo> {
-        let id: string[] = [];
-        items.forEach(el => {
-            if(el.price !== null) id.push(el.id)
-        });
-        return this._baseApi.post<TOrderInfo>('/order', {
-            ...userData,
-            total: total,
-            items: id
-        }, 'POST');
+    postOrder(order: TOrder): Promise<TOrderInfo> {
+        return this._baseApi.post<TOrderInfo>('/order', order, 'POST');
     }
 }

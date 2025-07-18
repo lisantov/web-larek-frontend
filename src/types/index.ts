@@ -77,6 +77,19 @@ export interface IApi {
     post<T>(url: string, data: object, method?: ApiPostMethods): Promise<T>;
 }
 
+// ТИП ДЛЯ СОЗДАНИЯ ЗАКАЗА
+export type TOrder = IUser & {
+    total: number;
+    items: string[];
+}
+
+// ОТВЕТ СЕРВЕРА ПРИ РАЗМЕЩЕНИИ ЗАКАЗА
+export interface TOrderInfo {
+    id?: string;
+    total?: number;
+    error?: string;
+};
+
 export enum EventsList {
     // ДАННЫЕ
     CATALOG_CHANGED = 'CATALOG:CHANGED', // Изменение массива товаров в каталоге
